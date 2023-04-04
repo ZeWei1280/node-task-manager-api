@@ -1,7 +1,11 @@
 import mongoose from 'mongoose';
 
 const connectionURL = process.env.MONGODB_URL 
-await mongoose.connect(connectionURL);
 
+const mongooseConnect = async ()=>{
+    await mongoose.connect(connectionURL);
+}
+  
+mongooseConnect();
 
 

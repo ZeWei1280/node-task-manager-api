@@ -152,7 +152,7 @@ router.delete('/users/me', auth, async (req, res)=>{
 
 
 /*-------------------------------------------------------------------*/
-// profile
+// avatar
 
 router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res)=>{
 
