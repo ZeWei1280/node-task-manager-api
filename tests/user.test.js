@@ -3,8 +3,11 @@ import app from '../src/app.js'
 import User from '../src/models/user.js'
 import { userOne, userOneId, setupDatabase } from './fixtures/db.js'
 
-beforeEach(setupDatabase);
-
+// beforeEach(setupDatabase);
+beforeEach(async ()=>{
+    await setupDatabase();
+})
+//
 // beforeAll、afterAll 
 // afterEach(()=>{
 //     console.log('after each')
