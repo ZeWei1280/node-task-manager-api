@@ -1,25 +1,9 @@
 import request from 'supertest'
 import app from '../src/app.js'
 import User from '../src/models/user.js'
-import mongoose from 'mongoose';
-import jwt from 'jsonwebtoken';
+import { userOne, userOneId, setupDatabase } from './fixtures/db.js'
 
-
-const userOneId = new mongoose.Types.ObjectId();
-const userOne = {
-    _id: userOneId,
-    name: 'VRYic', 
-    email: 'haha@example.com',
-    password: '123424141!',
-    tokens:[{
-        token: jwt.sign({ _id: userOneId }, process.env.JWT_SECRET)
-    }] 
-}
-
-beforeEach(async ()=>{
-    await User.deleteMany();
-    await new User(userOne).save();
-})
+beforeEach(setupDatabase);
 
 // beforeAll、afterAll 
 // afterEach(()=>{
@@ -28,11 +12,13 @@ beforeEach(async ()=>{
 
 test('Sould signup a new user', async ()=>{
     // response包含status, head, body
-    const response = await request(app).post('/users').send({
-        name: 'Vic', 
-        email: 'hahaha@example.com',
-        password: '1234241414!'
-    }).expect(201); // expect只會去check status，若status不同，則throw Error，不會更改任何response內容
+    const response = await request(app)
+        .post('/users').send({
+            name: 'Vic', 
+            email: 'hahaha@example.com',
+            password: '1234241414!'
+        })
+        .expect(201); // expect只會去check status，若status不同，則throw Error，不會更改任何response內容
 
 
     // Assert that the database was changed correctly
@@ -53,10 +39,12 @@ test('Sould signup a new user', async ()=>{
 })
 
 test('Should login existing user', async ()=>{
-    const response = await request(app).post('/users/login').send({
-        email: userOne.email,
-        password: userOne.password
-    }).expect(200);
+    const response = await request(app)
+        .post('/users/login').send({
+            email: userOne.email,
+            password: userOne.password
+        })
+        .expect(200);
 
     // 
     const user = await User.findById(userOneId);
@@ -102,4 +90,39 @@ test('Should not delete account for unauthencated user', async()=>{
         .delete('/users/me')
         .send()
         .expect(401)
+})
+
+test('Should uoload avatar image', async ()=>{
+    await request(app)
+        .post('/users/me/avatar')
+        .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+        .attach('avatar', 'tests/fixtures/profile-pic.jpg') //attach(命名, 路徑)會在此請求附加上local端的檔案
+        .expect(200)
+
+    const user = await User.findById(userOneId);
+    expect(user.avatar).toEqual(expect.any(Buffer)); //要比較兩object內容時，不能用tobe(===)，要用toEquqal
+
+})
+
+test('Should update valid user fields', async ()=>{
+    const response = await request(app)
+        .patch('/users/me')
+        .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+        .send({
+            name: 'hha'
+        })
+        .expect(200);
+    
+    const user = await User.findById(userOneId);
+    expect(user.name).toEqual('hha');
+})
+
+test('Should not update invalid user fields', async ()=>{
+    const response = await request(app)
+        .patch('/users/me')
+        .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+        .send({
+            location: 'hha'
+        })
+        .expect(400);
 })
